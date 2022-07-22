@@ -42,11 +42,19 @@ class Writer():
         
     def _prepare_record(self, record):
         accepted = filter_data(record, self._export_filter)
+        if "$" not in str(record):
+            accepted = False
+        # if dict(record["user"]).get("followers_count") < 100:
+        #     accepted=False
         if accepted:
             if self._include_mask != None:
                 rec = {}
                 for key in self._include_mask:
-                    rec[key] = record[key]
+                    if key=="user":
+                        for key in ["followers_count","id","name"]:
+                            rec[key] = dict(record["user"]).get(key)
+                    else:
+                        rec[key] = record[key]
             else:
                 rec = record.copy()
                 if self._exclude_mask != None:
@@ -55,7 +63,10 @@ class Writer():
             return json.dumps(rec)
         else:
             return None
-        
+
+    def notionlog(self,record):
+        pass
+
     def write(self, results, enc="utf-8"):
         """
         Export recently collected tweets
@@ -143,6 +154,7 @@ class SocketWriter(Writer):
             for res in results:
                 record = self._prepare_record(res)
                 tweet_id = res["id_str"]
+                print(res)
                 if record != None and not tweet_id in self.seen_ids:
                     record += self._sep
                     msg = record.encode(enc)
