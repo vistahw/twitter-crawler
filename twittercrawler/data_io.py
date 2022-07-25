@@ -1,4 +1,4 @@
-import os, json, socket
+import os, json, socket, re, datetime
 import pandas as pd
 from kafka import KafkaProducer, KafkaConsumer
 from .utils import load_json_result
@@ -42,13 +42,22 @@ class Writer():
         
     def _prepare_record(self, record):
         accepted = filter_data(record, self._export_filter)
+        money = 0
         if "$" not in str(record):
-            accepted = False
-        # if dict(record["user"]).get("followers_count") < 100:
-        #     accepted=False
+            accepted=False
+        else:
+            pattern=r'\$\d+,*\d*\.*\d*|\d+\.*\d*\s*\$'
+            match=re.findall(pattern, str(record['text']))
+            if len(match)!=0:
+                money = match[0]
+            else:
+               accepted = False
+        if dict(record["user"]).get("followers_count") < 1000:
+            accepted=False
         if accepted:
             if self._include_mask != None:
                 rec = {}
+                rec["money"] = money
                 for key in self._include_mask:
                     if key=="user":
                         for key in ["followers_count","id","name"]:
@@ -60,6 +69,7 @@ class Writer():
                 if self._exclude_mask != None:
                     for key in self._exclude_mask:
                         del rec[key]
+            record['created_at'] = datetime.datetime.now().strftime('%Y-%m-%d')
             return json.dumps(rec)
         else:
             return None

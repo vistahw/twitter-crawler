@@ -35,7 +35,7 @@ print(success, max_id, latest_id, cnt)
 while True:
     # wait for 5 minutes
     print("\nSleeping for 5 minutes...")
-    time.sleep(1 * 60)
+    time.sleep(5 * 60)
 
     # NEW termination (collect only new tweets)
     id_terminator = get_id_termination(latest_id)
