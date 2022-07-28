@@ -60,7 +60,7 @@ class Writer():
                 rec["money"] = money
                 for key in self._include_mask:
                     if key=="user":
-                        for key in ["followers_count","id","name"]:
+                        for key in ["created_at","followers_count","id","name"]:
                             rec[key] = dict(record["user"]).get(key)
                     else:
                         rec[key] = record[key]
@@ -138,13 +138,13 @@ class SocketWriter(Writer):
     separator
         Set string separator between exported tweets
     """
-    def __init__(self, port, host="localhost", ip=None, max_size=10000, separator="###SOCKETSEP###", include_mask=None, exclude_mask=None, export_filter=None):
+    def __init__(self, port, host="localhost", ip=None, max_sizez=10000, separator="###SOCKETSEP###", include_mask=None, exclude_mask=None, export_filter=None):
         super(SocketWriter, self).__init__(include_mask, exclude_mask, export_filter)
         self._conn = None
         self._port = port
         self._ip = socket.gethostbyname(host) if ip == None else ip
         self._sep = separator
-        self.max_size = max_size
+        self.max_size = max_sizez
         self.seen_ids = []
         self._connect()
         
@@ -171,7 +171,7 @@ class SocketWriter(Writer):
                     self._conn.send(msg)
                     self.seen_ids.append(tweet_id)
             if len(self.seen_ids) > self.max_size:
-                self.seen_ids = self.seen_ids[int(max_size*0.2):]
+                self.seen_ids = self.seen_ids[int(self.max_size*0.2):]
             
     def close(self):
         if self._conn != None:
@@ -322,7 +322,7 @@ class KafkaReader(StreamReader):
         self.consumer = KafkaConsumer(bootstrap_servers='%s:%i' % (self.host, self.port))
         
     def read(self, return_dict=True, enc="utf-8"):
-        for message in consumer:
+        for message in self.consumer:
             msg_bytes = message.value
             msg = msg_bytes.decode(enc)
             yield json.loads(msg) if return_dict else msg
