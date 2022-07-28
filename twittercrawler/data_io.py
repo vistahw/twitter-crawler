@@ -108,9 +108,9 @@ class FileWriter(Writer):
     def __init__(self, file_path, clear=False, include_mask=None, exclude_mask=None, export_filter=None):
         super(FileWriter, self).__init__(include_mask, exclude_mask, export_filter)
         if clear or not os.path.exists(file_path):
-            self._output_file = open(file_path, 'w')
+            self._output_file = open(file_path, 'w',encoding='utf-8')
         else:
-            self._output_file = open(file_path, 'a')
+            self._output_file = open(file_path, 'a+',encoding='utf-8')
             
     def write(self, results, enc="utf-8"):
         for res in results:

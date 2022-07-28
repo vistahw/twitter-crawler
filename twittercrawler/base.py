@@ -4,7 +4,7 @@ from .scheduler import *
 from .utils import load_credentials
 from twython.exceptions import TwythonAuthError, TwythonError
 
-class Crawler(RequestScheduler):    
+class Crawler(RequestScheduler):
     
     def __init__(self, time_frame, max_requests, sync_time, limit, verbose=False):
         """Twitter API scheduler object. It enables only 'max_requests' requests in every 'time_frame' seconds."""
@@ -151,7 +151,9 @@ class NetworkCrawler(Crawler):
                 break
         return u_id, cursor, cnt
                 
-class SearchCrawler(Crawler):    
+class SearchCrawler(Crawler):
+    sender="1"
+
     def __init__(self, time_frame, max_requests, sync_time, limit, only_geo=False, verbose=False):
         super(SearchCrawler, self).__init__(time_frame, max_requests, sync_time, limit, verbose)
         self.only_geo = only_geo
@@ -162,7 +164,15 @@ class SearchCrawler(Crawler):
         """Set search parameters with a dictionary"""
         self.search_args = search_args
         print(self.search_args)
-          
+
+    def switchKey(self):
+        if self.sender == "1":
+            self.authenticate("./api_key2.json")
+            self.sender = "2"
+        else:
+            self.authenticate("./api_key1.json")
+            self.sender = "1"
+
     def _search_by_query(self, wait_for, current_max_id=0, custom_since_id=None, term_func=None, feedback_time=15*60):
         if "max_id" in self.search_args:
             del self.search_args["max_id"]
@@ -226,10 +236,12 @@ class SearchCrawler(Crawler):
             traceback.print_exc()
             print()
             try:
+                self.switchKey()
                 current_time = time.time()
                 _, wait_for = self._check_remaining_limit(self.twitter_api, current_time)
-                print("RATE LIMIT RESET in %.1f seconds" % wait_for)
-                time.sleep(wait_for)
+                if wait_for>0:
+                    print("RATE LIMIT RESET in %.1f seconds" % wait_for)
+                    time.sleep(wait_for)
             except Exception as e:
                 traceback.print_exc()
                 print("SLEEPING for 900 seconds!")

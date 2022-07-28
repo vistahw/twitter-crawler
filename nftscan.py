@@ -1,14 +1,46 @@
 import datetime
 import time
+import os
+import requests
+import traceback
 
 from twittercrawler.crawlers import RecursiveCrawler
 from twittercrawler.data_io import FileWriter, FileReader
 from twittercrawler.search import get_time_termination, get_id_termination
+from os.path import getmtime, isfile, join
+
+def mkdir(path):
+    path = path.strip()
+    path = path.rstrip("\\")
+
+    isExists = os.path.exists(path)
+
+    if not isExists:
+        os.makedirs(path)
+
+        print (path + ' created')
+        return True
+    else:
+        print (path + ' exist.')
+        return False
+
+def msg_push(content, key="SCT83383TVNPXK2INl9DAs04HNnFk9gxi",title="nftscan"):
+    try:
+        url = 'https://sc.ftqq.com/%s.send' % key
+        requests.post(url, data={'text': title, 'desp': content})
+    except Exception as e:
+        traceback.format_exc()
 
 # initialize
-file_path = "recursive_results.txt"
+sender="1"
+current_dir=os.path.abspath('.')
+mkpath = join(current_dir, ".cache")
+mkdir(mkpath)
+
+FILE_PATH=os.path.join(current_dir,".cache","log_" +str(datetime.datetime.now().strftime("%m-%d")) + '.txt')
+file_path = FILE_PATH
 recursive = RecursiveCrawler()
-recursive.authenticate("./api_key.json")
+recursive.authenticate("./api_key1.json")
 keys = ["id_str","user","text"]
 recursive.connect_output([FileWriter(file_path, clear=False,  include_mask=keys)])
 
@@ -46,10 +78,13 @@ while True:
     print(success, new_max_id, new_latest_id, new_cnt)
     latest_id= new_latest_id
 
-# close
-recursive.close()
+    if file_path!=FILE_PATH:
+        recursive.close()
+        # load results
+        results_df = FileReader(file_path).read()
+        print("\nTotal hits:", len(results_df))
+        print(results_df.loc[0])
+        msg_push(str(results_df.loc[0]))
 
-# load results
-results_df = FileReader(file_path).read()
-print("\nTotal hits:", len(results_df))
-print(results_df.loc[0])
+        file_path=FILE_PATH
+        recursive.connect_output([FileWriter(file_path, clear=False, include_mask=keys)])
