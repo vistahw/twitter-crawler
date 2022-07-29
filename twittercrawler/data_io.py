@@ -72,7 +72,7 @@ class Writer():
             record['created_at'] = datetime.datetime.now().strftime('%Y-%m-%d')
             dellist=['499672969','1347334157316321285','1336123093543215104','1514769101117304832','amazon']
             for key in dellist:
-                if str(key) in str(rec):
+                if str(key) in str.lower(str(rec)):
                     return None
             return json.dumps(rec)
         else:
