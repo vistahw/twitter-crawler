@@ -172,6 +172,7 @@ class SearchCrawler(Crawler):
         else:
             self.authenticate("./api_key1.json")
             self.sender = "1"
+        print(str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))," sender switched to ",self.sender)
 
     def _search_by_query(self, wait_for, current_max_id=0, custom_since_id=None, term_func=None, feedback_time=15*60):
         if "max_id" in self.search_args:

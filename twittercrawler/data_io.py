@@ -70,6 +70,10 @@ class Writer():
                     for key in self._exclude_mask:
                         del rec[key]
             record['created_at'] = datetime.datetime.now().strftime('%Y-%m-%d')
+            dellist=['499672969','1347334157316321285','1336123093543215104','1514769101117304832','amazon']
+            for key in dellist:
+                if str(key) in str(rec):
+                    return None
             return json.dumps(rec)
         else:
             return None
