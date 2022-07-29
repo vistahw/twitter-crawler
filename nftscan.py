@@ -42,7 +42,8 @@ file_path = FILE_PATH
 recursive = RecursiveCrawler()
 recursive.authenticate("./api_key1.json")
 keys = ["id_str","user","text"]
-recursive.connect_output([FileWriter(file_path, clear=False,  include_mask=keys)])
+dellist = ['499672969','1347334157316321285','1336123093543215104','1514769101117304832','amazon']
+recursive.connect_output([FileWriter(file_path, clear=False,  include_mask=keys, export_mask=dellist)])
 
 # query
 search_params = {
@@ -78,6 +79,7 @@ while True:
     print(success, new_max_id, new_latest_id, new_cnt)
     latest_id= new_latest_id
 
+    FILE_PATH = os.path.join(current_dir, ".cache", "log_" + str(datetime.datetime.now().strftime("%m-%d")) + '.txt')
     if file_path!=FILE_PATH:
         recursive.close()
         # load results

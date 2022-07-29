@@ -32,9 +32,10 @@ class Writer():
     export_filter
         Choose from these values `[None,"tweet","retweet","quote","mention"]` to filter the exported content. In case of the default value `None` every hit is exported.
     """
-    def __init__(self, include_mask=None, exclude_mask=None, export_filter=None):
+    def __init__(self, include_mask=None, exclude_mask=None, export_filter=None, export_mask=None):
         self._include_mask = include_mask
         self._exclude_mask = exclude_mask
+        self._export_mask= export_mask
         if export_filter in filter_options:
             self._export_filter = export_filter
         else:
@@ -60,7 +61,7 @@ class Writer():
                 rec["money"] = money
                 for key in self._include_mask:
                     if key=="user":
-                        for key in ["created_at","followers_count","id","name"]:
+                        for key in ["followers_count","id","name"]:
                             rec[key] = dict(record["user"]).get(key)
                     else:
                         rec[key] = record[key]
@@ -69,9 +70,8 @@ class Writer():
                 if self._exclude_mask != None:
                     for key in self._exclude_mask:
                         del rec[key]
-            record['created_at'] = datetime.datetime.now().strftime('%Y-%m-%d')
-            dellist=['499672969','1347334157316321285','1336123093543215104','1514769101117304832','amazon']
-            for key in dellist:
+            rec['created_at'] =record['created_at']
+            for key in self._export_mask:
                 if str(key) in str.lower(str(rec)):
                     return None
             return json.dumps(rec)
@@ -109,8 +109,8 @@ class FileWriter(Writer):
     clear
         Clear output file. Use `clear=False` to append new tweets to former search results.
     """
-    def __init__(self, file_path, clear=False, include_mask=None, exclude_mask=None, export_filter=None):
-        super(FileWriter, self).__init__(include_mask, exclude_mask, export_filter)
+    def __init__(self, file_path, clear=False, include_mask=None, exclude_mask=None, export_filter=None,export_mask=None):
+        super(FileWriter, self).__init__(include_mask, exclude_mask, export_filter,export_mask)
         if clear or not os.path.exists(file_path):
             self._output_file = open(file_path, 'w',encoding='utf-8')
         else:
