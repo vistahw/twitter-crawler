@@ -47,7 +47,7 @@ recursive.connect_output([FileWriter(file_path, clear=False,  include_mask=keys,
 
 # query
 search_params = {
-    "q": "nftgiveaway OR giveaway OR freemint OR whitelist OR Campaign OR nftdrop OR nftshill OR bounty OR grants OR airdrop OR oat OR earn OR gleam OR mintnow OR finalmint",
+    "q": "nftgiveaway OR giveaway OR freemint OR whitelist OR #Campaign OR nftdrop OR nftshill OR #bounty OR #grants OR airdrop OR oat OR #earn OR gleam OR mintnow OR finalmint",
     "result_type": "recent",
     "lang": "en",
     "count": 100
@@ -80,13 +80,16 @@ while True:
     latest_id= new_latest_id
 
     FILE_PATH = os.path.join(current_dir, ".cache", "log_" + str(datetime.datetime.now().strftime("%m-%d")) + '.txt')
+    print(file_path,FILE_PATH)
     if file_path!=FILE_PATH:
+        print("switched")
         recursive.close()
         # load results
-        results_df = FileReader(file_path).read()
-        print("\nTotal hits:", len(results_df))
-        print(results_df.loc[0])
-        msg_push(str(results_df.loc[0]))
+        # results_df = FileReader(file_path).read()
+        # print("\nTotal hits:", len(results_df))
+        # print(results_df.loc[0])
+        count = len(open(file_path, 'r').readlines())
+        msg_push("file_path generated. ",str(count),' data recorded.')
 
         file_path=FILE_PATH
         recursive.connect_output([FileWriter(file_path, clear=False, include_mask=keys)])
