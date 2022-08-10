@@ -117,10 +117,13 @@ class FileWriter(Writer):
             self._output_file = open(file_path, 'a+',encoding='utf-8')
             
     def write(self, results, enc="utf-8"):
+        outputCount=0
         for res in results:
             record = self._prepare_record(res)
             if record != None:
+                outputCount+=1
                 self._output_file.write("%s\n" % record)
+        print(f"Found {len(results)} tweets,Output qualified {outputCount} record.")
             
     def close(self):
         self._output_file.close()

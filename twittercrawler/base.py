@@ -152,7 +152,6 @@ class NetworkCrawler(Crawler):
         return u_id, cursor, cnt
 
 class SearchCrawler(Crawler):
-    sender = "1"
 
     def __init__(self, time_frame, max_requests, sync_time, limit, only_geo=False, verbose=False):
         super(SearchCrawler, self).__init__(time_frame, max_requests, sync_time, limit, verbose)
@@ -164,27 +163,6 @@ class SearchCrawler(Crawler):
         """Set search parameters with a dictionary"""
         self.search_args = search_args
         print(self.search_args)
-
-    def switchKey(self):
-        if self.sender == "1":
-            self.authenticate("./api_key2.json")
-            self.sender = "2"
-        elif self.sender == "2":
-            self.authenticate("./api_key3.json")
-            self.sender = "3"
-        elif self.sender == "3":
-            self.authenticate("./api_key4.json")
-            self.sender = "4"
-        elif self.sender == "4":
-            self.authenticate("./api_key5.json")
-            self.sender = "5"
-        elif self.sender == "5":
-            self.authenticate("./api_key1.json")
-            self.sender = "1"
-        # elif self.sender == "6":
-        #     self.authenticate("./api_key1.json")
-        #     self.sender = "1"
-        print(str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")), " sender switched to ", self.sender)
 
     def _search_by_query(self, wait_for, current_max_id=0, custom_since_id=None, term_func=None, feedback_time=15 * 60):
         if "max_id" in self.search_args:
@@ -249,12 +227,11 @@ class SearchCrawler(Crawler):
             traceback.print_exc()
             print()
             try:
-                self.switchKey()
                 current_time = time.time()
                 _, wait_for = self._check_remaining_limit(self.twitter_api, current_time)
                 if wait_for > 0:
                     print("RATE LIMIT RESET in %.1f seconds" % wait_for)
-                    time.sleep(wait_for)
+                    # time.sleep(wait_for)
             except Exception as e:
                 traceback.print_exc()
                 print("SLEEPING for 900 seconds!")
