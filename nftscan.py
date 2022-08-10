@@ -51,8 +51,8 @@ def search_start(file_path):
     recursive = RecursiveCrawler()
     recursive.authenticate("./api_key1.json")
     keys = ["id_str","user","text"]
-    dellist = ['499672969','1347334157316321285','1336123093543215104','1514769101117304832','amazon']
-    recursive.connect_output([FileWriter(file_path, clear=False,  include_mask=keys, export_mask=dellist)])
+    userdellist = ['499672969','1347334157316321285','1336123093543215104','1514769101117304832','amazon']
+    recursive.connect_output([FileWriter(file_path, clear=False,  include_mask=keys, export_mask=userdellist)])
     
     # query
     search_params = {
