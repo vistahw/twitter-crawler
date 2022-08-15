@@ -5,7 +5,8 @@ from .utils import load_json_result
 
 ### Writers ###
 
-filter_options = [None,"tweet","retweet","quote","mention"]
+filter_options = [None, "tweet", "retweet", "quote", "mention"]
+
 
 def filter_data(record, filter_type):
     if filter_type == "tweet":
@@ -18,6 +19,7 @@ def filter_data(record, filter_type):
         return "user_mentions" in record["entities"] and len(record["entities"]["user_mentions"]) > 0
     else:
         return True
+
 
 class Writer():
     """
@@ -32,36 +34,37 @@ class Writer():
     export_filter
         Choose from these values `[None,"tweet","retweet","quote","mention"]` to filter the exported content. In case of the default value `None` every hit is exported.
     """
+
     def __init__(self, include_mask=None, exclude_mask=None, export_filter=None, export_mask=None):
         self._include_mask = include_mask
         self._exclude_mask = exclude_mask
-        self._export_mask= export_mask
+        self._export_mask = export_mask
         if export_filter in filter_options:
             self._export_filter = export_filter
         else:
             raise ValueError("Invalid filter option! Choose from: %s" % str(filter_options))
-        
+
     def _prepare_record(self, record):
         accepted = filter_data(record, self._export_filter)
         money = 0
         if "$" not in str(record):
-            accepted=False
+            accepted = False
         else:
-            pattern=r'\$\d+,*\d*\.*\d*|\d+\.*\d*\s*\$'
-            match=re.findall(pattern, str(record['text']))
-            if len(match)!=0:
+            pattern = r'\$\d+,*\d*\.*\d*|\d+\.*\d*\s*\$'
+            match = re.findall(pattern, str(record['text']))
+            if len(match) != 0:
                 money = match[0]
             else:
-               accepted = False
+                accepted = False
         if dict(record["user"]).get("followers_count") < 1000:
-            accepted=False
+            accepted = False
         if accepted:
             if self._include_mask != None:
                 rec = {}
                 rec["money"] = money
                 for key in self._include_mask:
-                    if key=="user":
-                        for key in ["followers_count","id","name"]:
+                    if key == "user":
+                        for key in ["followers_count", "id", "name"]:
                             rec[key] = dict(record["user"]).get(key)
                     else:
                         rec[key] = record[key]
@@ -70,7 +73,7 @@ class Writer():
                 if self._exclude_mask != None:
                     for key in self._exclude_mask:
                         del rec[key]
-            rec['created_at'] =record['created_at']
+            rec['created_at'] = record['created_at']
             for key in self._export_mask:
                 if str(key) in str.lower(str(rec)):
                     return None
@@ -78,13 +81,13 @@ class Writer():
         else:
             return None
 
-    def notionlog(self,record):
+    def notionlog(self, record):
         pass
 
     def write(self, results, enc="utf-8"):
         """
         Export recently collected tweets
-        
+
         Parameters
         ----------
         results
@@ -93,10 +96,11 @@ class Writer():
            Set encoding for serialization
         """
         pass
-    
+
     def close(self):
         """Close writer object"""
         pass
+
 
 class FileWriter(Writer):
     """
@@ -109,24 +113,28 @@ class FileWriter(Writer):
     clear
         Clear output file. Use `clear=False` to append new tweets to former search results.
     """
-    def __init__(self, file_path, clear=False, include_mask=None, exclude_mask=None, export_filter=None,export_mask=None):
-        super(FileWriter, self).__init__(include_mask, exclude_mask, export_filter,export_mask)
+
+    def __init__(self, file_path, clear=False, include_mask=None, exclude_mask=None, export_filter=None,
+                 export_mask=None):
+        super(FileWriter, self).__init__(include_mask, exclude_mask, export_filter, export_mask)
         if clear or not os.path.exists(file_path):
-            self._output_file = open(file_path, 'w',encoding='utf-8')
+            self._output_file = open(file_path, 'w', encoding='utf-8')
         else:
-            self._output_file = open(file_path, 'a+',encoding='utf-8')
-            
+            self._output_file = open(file_path, 'a+', encoding='utf-8')
+
     def write(self, results, enc="utf-8"):
-        outputCount=0
+        outputCount = 0
         for res in results:
             record = self._prepare_record(res)
             if record != None:
-                outputCount+=1
+                outputCount += 1
                 self._output_file.write("%s\n" % record)
-        print(f"Found {len(results)} tweets,Output qualified {outputCount} record.")
-            
+        print(str(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")),
+              f"Found {len(results)} tweets,Output qualified {outputCount} record.")
+
     def close(self):
         self._output_file.close()
+
 
 class SocketWriter(Writer):
     """
@@ -145,7 +153,9 @@ class SocketWriter(Writer):
     separator
         Set string separator between exported tweets
     """
-    def __init__(self, port, host="localhost", ip=None, max_sizez=10000, separator="###SOCKETSEP###", include_mask=None, exclude_mask=None, export_filter=None):
+
+    def __init__(self, port, host="localhost", ip=None, max_sizez=10000, separator="###SOCKETSEP###", include_mask=None,
+                 exclude_mask=None, export_filter=None):
         super(SocketWriter, self).__init__(include_mask, exclude_mask, export_filter)
         self._conn = None
         self._port = port
@@ -154,15 +164,15 @@ class SocketWriter(Writer):
         self.max_size = max_sizez
         self.seen_ids = []
         self._connect()
-        
+
     def _connect(self):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.bind((self._ip, self._port))
-        print ("Socket binded to port %i" % self._port)
+        print("Socket binded to port %i" % self._port)
         s.listen(5)
-        print ("Socket is listening...")
+        print("Socket is listening...")
         self._conn, addr = s.accept()
-        print ('Got connection from', addr)
+        print('Got connection from', addr)
 
     def write(self, results, enc="utf-8"):
         if self._conn == None:
@@ -178,12 +188,13 @@ class SocketWriter(Writer):
                     self._conn.send(msg)
                     self.seen_ids.append(tweet_id)
             if len(self.seen_ids) > self.max_size:
-                self.seen_ids = self.seen_ids[int(self.max_size*0.2):]
-            
+                self.seen_ids = self.seen_ids[int(self.max_size * 0.2):]
+
     def close(self):
         if self._conn != None:
             self._conn.close()
-        
+
+
 class KafkaWriter(Writer):
     """
     Export tweets to Kafka queue.
@@ -197,6 +208,7 @@ class KafkaWriter(Writer):
     host
         Set host for the KafkaProducer
     """
+
     def __init__(self, topic, port=9092, host="localhost", include_mask=None, exclude_mask=None, export_filter=None):
         super(KafkaWriter, self).__init__(include_mask, exclude_mask, export_filter)
         self.host = host
@@ -211,9 +223,10 @@ class KafkaWriter(Writer):
                 key_b = res["id_str"].encode(enc)
                 value_b = record.encode(enc)
                 self._producer.send(self.topic, key=key_b, value=value_b)
-            
+
     def close(self):
         self._producer.close()
+
 
 ### Readers ###
 
@@ -221,7 +234,7 @@ class StreamReader():
     def read(self, return_dict=True, enc="utf-8"):
         """
         Read exported tweets.
-        
+
         Parameters
         ----------
         return dict
@@ -230,10 +243,11 @@ class StreamReader():
             Encoding used for serialization
         """
         pass
-    
+
     def close(self):
         """Close reader object"""
         pass
+
 
 class FileReader():
     """
@@ -244,13 +258,14 @@ class FileReader():
     file_path
         File path of the exported tweets
     """
+
     def __init__(self, file_path):
         self._input_file = file_path
-        
+
     def read(self, dataframe=True):
         """
         Read exported tweets.
-        
+
         Parameters
         ----------
         dataframe
@@ -261,7 +276,8 @@ class FileReader():
             return pd.DataFrame(records)
         else:
             return records
-        
+
+
 class SocketReader(StreamReader):
     """
     Read exported tweets from socket.
@@ -279,6 +295,7 @@ class SocketReader(StreamReader):
     separator
         String separator between exported tweets
     """
+
     def __init__(self, port, host="localhost", ip=None, buffersize=1024, separator="###SOCKETSEP###"):
         self.sock = None
         self._port = port
@@ -286,11 +303,11 @@ class SocketReader(StreamReader):
         self._buffsize = buffersize
         self._sep = separator
         self._connect()
-        
+
     def _connect(self):
         self.sock = socket.socket()
         self.sock.connect((self._ip, self._port))
-            
+
     def read(self, return_dict=True, enc="utf-8"):
         received_str = ""
         received_msg = 0
@@ -298,17 +315,18 @@ class SocketReader(StreamReader):
             bytes_received = self.sock.recv(self._buffsize)
             if bytes_received == b'':
                 break
-            received_str += bytes_received.decode(enc) 
+            received_str += bytes_received.decode(enc)
             if self._sep in received_str:
                 splitted = received_str.split(self._sep)
                 received_str = splitted[-1]
                 for msg in splitted[:-1]:
                     yield json.loads(msg) if return_dict else msg
-            
+
     def close(self):
         if self.sock != None:
             self.sock.close()
-        
+
+
 class KafkaReader(StreamReader):
     """
     Read exported tweets from Kafka queue.
@@ -322,17 +340,18 @@ class KafkaReader(StreamReader):
     host
         Host for the KafkaConsumer
     """
+
     def __init__(self, topic, port=9092, host="localhost"):
         self.host = host
         self.port = port
         self.topic = topic
         self.consumer = KafkaConsumer(bootstrap_servers='%s:%i' % (self.host, self.port))
-        
+
     def read(self, return_dict=True, enc="utf-8"):
         for message in self.consumer:
             msg_bytes = message.value
             msg = msg_bytes.decode(enc)
             yield json.loads(msg) if return_dict else msg
-            
+
     def close(self):
         self.consumer.close()

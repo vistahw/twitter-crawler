@@ -4,6 +4,7 @@ from .scheduler import *
 from .utils import load_credentials
 from twython.exceptions import TwythonAuthError, TwythonError
 
+
 class Crawler(RequestScheduler):
 
     def __init__(self, time_frame, max_requests, sync_time, limit, verbose=False):
@@ -13,13 +14,15 @@ class Crawler(RequestScheduler):
         self._msg = ""
         self._limit = limit
         self._start_time, self._last_feedback = None, None
+        self.sender = 1
 
     def authenticate(self, auth_file_path=None):
         """Authenticate application with Twython."""
         success = False
         config = load_credentials(["api_key", "api_secret", "access_token", "access_token_secret"], auth_file_path)
         try:
-            self.twitter_api = Twython(config["api_key"], config["api_secret"], config["access_token"], config["access_token_secret"])
+            self.twitter_api = Twython(config["api_key"], config["api_secret"], config["access_token"],
+                                       config["access_token_secret"])
             print("Authentication was successful!")
             success = True
         except:
@@ -31,7 +34,8 @@ class Crawler(RequestScheduler):
         current_time = time.time()
         print("### FEEDBACK ###")
         td = datetime.timedelta(seconds=current_time - self._start_time)
-        print(self._msg + " is RUNNING since: %i days, %i hours and %i minutes %i seconds" % (td.days, td.seconds // 3600, (td.seconds // 60) % 60, td.seconds % 60))
+        print(self._msg + " is RUNNING since: %i days, %i hours and %i minutes %i seconds" % (
+        td.days, td.seconds // 3600, (td.seconds // 60) % 60, td.seconds % 60))
         self._last_feedback = current_time
 
     def _terminate(self, increment=True):
@@ -46,6 +50,7 @@ class Crawler(RequestScheduler):
             for writer in self._writers:
                 writer.write(results)
 
+
 class UserLookup(Crawler):
     def __init__(self, time_frame=900, max_requests=300, sync_time=15, limit=None, verbose=False):
         super(UserLookup, self).__init__(time_frame, max_requests, sync_time, limit, verbose)
@@ -53,6 +58,7 @@ class UserLookup(Crawler):
     def collect(self, user_ids=None, screen_names=None, from_index=None, offset=100, wait_for=2, feedback_time=15 * 60):
         def stringify(l):
             return ','.join([str(val) for val in l])
+
         self._num_requests, cnt = 0, 0
         self._start_time, self._last_feedback = time.time(), time.time()
         if user_ids == None and screen_names == None:
@@ -87,6 +93,7 @@ class UserLookup(Crawler):
             if self._terminate():
                 break
         return q_idx * offset, cnt
+
 
 class NetworkCrawler(Crawler):
     def __init__(self, network_type, time_frame, max_requests, sync_time, limit, verbose=False):
@@ -151,6 +158,7 @@ class NetworkCrawler(Crawler):
                 break
         return u_id, cursor, cnt
 
+
 class SearchCrawler(Crawler):
 
     def __init__(self, time_frame, max_requests, sync_time, limit, only_geo=False, verbose=False):
@@ -180,15 +188,25 @@ class SearchCrawler(Crawler):
                 # feedback
                 if time.time() - self._last_feedback > feedback_time:
                     self._show_time_diff()
-                    print("max_id: %s, since_id: %s, latest_id: %s" % (str(current_max_id), str(custom_since_id), str(latest_id)))
+                    print("max_id: %s, since_id: %s, latest_id: %s" % (
+                    str(current_max_id), str(custom_since_id), str(latest_id)))
                 stop_search = False
                 if current_max_id > 0:
                     self.search_args["max_id"] = current_max_id - 1
                 if custom_since_id != None:
                     self.search_args["since_id"] = custom_since_id
-
                 _ = self._verify_new_request(self.twitter_api)
+                # while True:
+                #     print('111', self._verify_new_request(self.twitter_api))
+                #     if self._verify_new_request(self.twitter_api) == True:
+                #         print("verify new request check ok")
+                #         break
+                #     else:
+                #         print('changsender')
+                #         self.changeSender()
+                print('search started')
                 tweets = self.twitter_api.search(**self.search_args)
+                # print('result', tweets)
                 self._register_request(delta_t=wait_for)
 
                 prev_max_id = current_max_id
@@ -224,6 +242,7 @@ class SearchCrawler(Crawler):
                 if self._terminate():
                     break
         except twython.exceptions.TwythonRateLimitError:
+            print("021-")
             traceback.print_exc()
             print()
             try:
@@ -233,11 +252,26 @@ class SearchCrawler(Crawler):
                     print("RATE LIMIT RESET in %.1f seconds" % wait_for)
                     # time.sleep(wait_for)
             except Exception as e:
+                print("022-")
                 traceback.print_exc()
                 print("SLEEPING for 900 seconds!")
                 time.sleep(901)
             success = False
-        except Exception:
+        except Exception as e:
+            print('301=', e)
             raise
         finally:
             return success, current_max_id, latest_id, cnt
+
+    def changeSender(self):
+        self.twitter_api.client.close()
+        self.sender += 1
+        if self.sender > 5:
+            self.sender = 1
+            time.sleep(5 * 60)
+
+        filename = f"./api_key{self.sender}.json"
+        print(f'sender switched {filename}')
+        self.authenticate(filename)
+        return
+
